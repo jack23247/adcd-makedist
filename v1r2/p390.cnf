@@ -1,0 +1,74 @@
+# p390.cnf
+# Loose translation of DEVMAP.NME (V1R2)
+
+defsym cnf_http_port "8038"
+defsym cnf_tz_offset "+0200"
+defsym cnf_ip_addr "192.168.1.121"
+
+pgmprdos licensed
+
+## Configuration ##
+
+archmode esa/390
+ostailor os/390
+loadparm 026000
+
+cpuserial 000611
+cpumodel 7490
+cpuverid 04
+ecpsvm no
+lparname p390
+lparnum 21
+model emulator
+plant zz
+manufacturer hrc
+
+mainsize 256
+numcpu 1
+maxcpu 1
+engines	cp
+
+sysepoch 1900
+#yroffset -28
+tzoffset $(cnf_tz_offset)
+timerint default
+toddrag	1.0
+
+pantitle "OS/390 V1R2 ADCD on Hercules ESA/390"
+panrate	slow
+
+cnslport 3270
+
+hercprio 0
+todprio	-20
+devprio	8
+cpuprio	15
+devtmax	8
+
+httpport $(cnf_http_port)
+
+000c 2501 rdr/*.jcl ascii
+000e 1403 printer.00e
+000f 1403 printer.00f
+
+0122 3380 os390/mvswk1.122
+0260 3390 os390/pr39r2.260
+0261 3390 os390/pr39d2.261
+
+#0560 3480 /dev/nst0
+#0580 3420 tape.580
+#0581 3420 tape.581
+
+0700 3270 * 127.0.0.1
+0701 3270 * 127.0.0.1
+0702 3270 * 127.0.0.1
+
+0900 3270 * 127.0.0.1
+0901 3270 * 127.0.0.1
+
+0902 3270 *
+0903 3270 *
+
+0e20.2 lcs -n /dev/net/tun $(cnf_ip_addr)
+
+#0e40 lcs -n /dev/net/tun
