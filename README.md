@@ -3,6 +3,7 @@
 Converts an OS/390 ADCD disk image set into an Hercules distribution
 
 > *Caveat*
+>
 > - OS/390 ADCD is not licensed to run on anything other than a P/390 or an R/390 system
 > - This repository does not contain the disk images required to use this software, as they are property of IBM
 
@@ -11,7 +12,7 @@ Converts an OS/390 ADCD disk image set into an Hercules distribution
 - `v1r2/` - Files specific to the V1R2 distribution
     - `p390.cnf` - Configuration file for V1R2 based on DEVMAP.NME from the OS/390 ADCD V1R2 image set
     - `run.sh` - Convenience script that sets up a tunnel and runs Hercules
-- `v2r10/` - Files specific to the V2R10 distribution (proposed)
+<!--- `v2r10/` - Files specific to the V2R10 distribution (proposed)-->
 - `makedist.sh` - The main script that checks the images' checksums and does the conversion
 - `README.md` - This file
 
@@ -61,7 +62,8 @@ $ ./makedist.sh -d v1r2 -f disk1.iso -f disk2.iso -o
 Creates a V1R2 distribution from disk images disk1.iso and disk2.iso, overwriting existing distribution files
 
 > *Caveat*
-> The script does not copy the convenience files from `v1r2/` automatically: you should do that manually as they define important Hercules operating parameters that you may want to edit before running on your system.
+>
+> The script does not copy over the convenience files from `v1r2/`: you should do that manually as they define important Hercules operating parameters that you may want to edit before running on your system.
 
 ## TODOs
 
@@ -75,4 +77,4 @@ In order of importance:
 
 ## Contributing
 
-Tickets and PRs for bugs or minor features are very welcome, if anyone wants to tackle something on the TODO list just open a ticket and we'll set up a roadmap together
+Tickets and PRs for bugs or feature requests are very welcome, if anyone wants to tackle something that's on the TODO list just open a ticket and we'll set up a roadmap together
