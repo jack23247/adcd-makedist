@@ -4,8 +4,8 @@ Converts an OS/390 ADCD disk image set into an Hercules distribution
 
 > *Caveat*
 >
-> - OS/390 ADCD is not licensed to run on anything other than a P/390 or an R/390 system
-> - This repository does not contain the disk images required to use this software, as they are property of IBM
+> `makedist` is intended as a tool for mainframe hobbyists, not for software pirates: thus, this repository does not contain the disk images required to use this software, as they are property of IBM. 
+> Before using this script you should understand that OS/390 ADCD is not licensed to run on anything other than a P/390 or an R/390 system, and running the distribution derived from this script constitutes a violation of IBM's license agreement.
 
 ## Files
 
@@ -61,9 +61,7 @@ $ ./makedist.sh -d v1r2 -f disk1.iso -f disk2.iso -o
 
 Creates a V1R2 distribution from disk images disk1.iso and disk2.iso, overwriting existing distribution files
 
-> *Caveat*
->
-> The script does not copy over the convenience files from `v1r2/`: you should do that manually as they define important Hercules operating parameters that you may want to edit before running on your system.
+> Please note that the script does not copy over the convenience files from `v1r2/`: you should do that manually as they define important Hercules operating parameters that you may want to edit before running on your system
 
 ## TODOs
 
