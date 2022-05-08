@@ -1,5 +1,7 @@
 # adcd_makedist
 
+![makedist.png](makedist.png)
+
 Converts an OS/390 ADCD disk image set into an Hercules distribution
 
 > *Caveat*
