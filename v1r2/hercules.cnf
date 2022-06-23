@@ -1,0 +1,68 @@
+# OS/390 Release 2 Application Development System
+# R4.1 -- 24 Oct 1996 17:00:06
+# Conv. 23 Jun 2022 11:24:00+0200
+
+archmode esa/390
+ostailor os/390
+loadparm 0260....
+
+pgmprdos licensed
+
+cpumodel 7490
+cpuserial 000001
+cpuverid 04
+lparname SYS1
+lparnum 21
+mainsize 1024
+numcpu 1
+maxcpu 1
+engines	cp
+
+sysepoch 1900
+tzoffset +0200
+
+pantitle "OS/390 V1R2 ADCD on Hercules"
+panrate	slow
+
+cnslport 3270
+
+hercprio 0
+todprio	-20
+devprio	8
+cpuprio	15
+devtmax	8
+
+httpport 8038
+
+000c 2501 rdr/*.jcl ascii
+000e 1403 printer.00e
+000f 1403 printer.00f
+
+# 0010 3270 # Display for IPO Driver
+# 0063 3270 # Display for IPO Driver
+
+0122 3380 os390/mvswk1.122
+
+0260 3390 os390/pr39r2_1.260
+0261 3390 os390/pr39d2_1.261
+
+# 0560 3480 /path/to/scsi/tape
+
+0580 3420 tape.580
+0581 3420 tape.581
+
+# 0590 3420
+
+0700 3270 # /R=OP
+0701 3270 # Local TSO 1
+0702 3270 # Local TSO 2
+
+0900 3270 # Local TSO 3
+0901 3270 # Local TSO 4
+
+# 0902 3270 # LAN TSO 1
+# 0903 3270 # LAN TSO 2
+
+# 0e20.2 3088 CTCI
+
+# 0e40 3088

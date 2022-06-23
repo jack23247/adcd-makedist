@@ -2,11 +2,12 @@
 # makedist.sh
 # Converts an OS/390 ADCD disk image set into an Hercules distribution
 
-# XXX I'm 100% sure there is a regression in V1R2! The behavior of the
-# functions has changed too much
-
 # TODO add prefix directory, and a switch to keep it intact in 
 # case of a failed run
+
+# TODO add 
+# - VM/ESA V2R4M0
+# - VSE/ESA V2R4M0
 
 # md_funct
 
@@ -84,10 +85,7 @@ shift $((OPTIND - 1))
 if [ ! $distrib ]; then
     echo "No distribution specified."
     exit
-elif [ $distrib == "v1r2" ]; then
-    echo "Building v1r2 is currently disabled due to regressions."
-    exit
-elif [ $distrib == "v2r10" ]; then
+elif [[ $distrib == "v1r2" || $distrib == "v2r10" ]]; then
     echo "Attempting to build distribution \"$distrib\"."
 else
     echo "Unknown distribution \"$distrib\"."
@@ -143,14 +141,13 @@ for image_file in $images_dir/*.iso; do
     elif [ $distrib == "v1r2" ]; then
         image_file_md5=$(md5sum $image_file | cut -f1 -d" ")
         if [ $image_file_md5 == "bfdc6219a72df802e5df2a40ca24d331" ]; then
-            echo "Found image \"OS/390 V1R2 ADCD CD1\"."
+            printf "OS390_V1R2_1, "
             v1r2_cd1=$image_file
         elif [ $image_file_md5 == "8bf8870839e3b54b1519b2a93dc184ba" ]; then
-            echo "Found image \"OS/390 V1R2 ADCD CD2\"."
+            printf "OS390_V1R2_2, "
             v1r2_cd2=$image_file
-        else
-            echo "Invalid image file for distribution \"v1r2\"."
-            exit
+        # else
+        #    echo "Invalid image file for distribution \"$distrib\", skipping."
         fi
     elif [ $distrib == "v2r10" ]; then
         image_file_md5=$(md5sum $image_file | cut -f1 -d" ")
@@ -193,8 +190,8 @@ for image_file in $images_dir/*.iso; do
         elif [ $image_file_md5 == "80d98edbed3c52ee60f7b24e7ad17f0e" ]; then
             printf "OS390RA013, "
             v2r10_cd13=$image_file
-        else
-            md_abend "Invalid image file for distribution \"$distrib\"."
+        # else
+        #    echo "Invalid image file for distribution \"$distrib\", skipping."
         fi
     else
         md_abend "Unhandled exception."
@@ -204,7 +201,7 @@ done
 echo "OK."
 
 if [[ $distrib == "v1r2" && ($v1r2_cd1 == "" || $v1r2_cd2 == "") ]]; then
-    md_abend "One or more required disk image files missing or unspecified."
+    md_abend "One or more required disk image files are missing."
 fi
 
 if [[ $distrib == "v2r10" && (
@@ -217,62 +214,6 @@ if [[ $distrib == "v2r10" && (
 
 fi
 
-# md_make_v1r2
-
-# if [ $distrib == "v1r2" ]; then
-#     sudo mount -o loop -r $v1r2_cd1 /mnt
-#     printf "Unpacking image \"OS/390 V1R2 ADCD CD1\":\n"
-#     cp /mnt/readme.mvs readme-mvs.txt
-#     chmod 664 readme-mvs.txt
-#     unzip -joL /mnt/mvswk1.zip -d tmp
-#     if [[ ! -f "tmp/MVSWK1.122" ]]; then
-#         printf "\nAn error occurred while unpacking the image."
-#         md_cleanup && exit
-#     fi
-#     unzip -joL /mnt/pr39r2.zip -d tmp
-#     if [[ ! -f "tmp/PR39R2_1.260" ]] || [[ ! -f "tmp/PR39R2_2.260" ]]; then
-#         printf "\nAn error occurred while unpacking the image."
-#         md_cleanup && exit
-#     fi
-#     sudo umount /mnt
-
-#     sudo mount -o loop -r $v1r2_cd2 /mnt
-#     printf "\nUnpacking image \"OS/390 V1R2 ADCD CD2\":\n"
-#     unzip -joL /mnt/pr39d2.zip -d tmp
-#     if [[ ! -f "tmp/PR39D2_1.261" ]] || [[ ! -f "tmp/PR39D2_2.261" ]]; then
-#         printf "\nAn error occurred while unpacking the image."
-#         md_cleanup && exit
-#     fi
-#     sudo umount /mnt
-
-#     mkdir -p os390/
-#     if [[ ! -d "os390/" ]]; then
-#         printf "\nUnable to create the destination directory."
-#         md_cleanup && exit
-#     fi
-
-#     printf "\nConverting DASD \"MVSWK1.122\":\n"
-#     dasdcopy -bz2 tmp/MVSWK1.122 os390/mvswk1.122
-#     if [[ ! -f "os390/mvswk1.122" ]]; then
-#         printf "\nAn error occurred while processing the DASD."
-#         md_abend
-#     fi
-
-#     printf "\nConverting DASD \"PR39R2.260\":\n"
-#     dasdcopy -bz2 tmp/PR39R2_1.260 os390/pr39r2.260
-#     if [[ ! -f "os390/pr39r2.260" ]]; then
-#         printf "\nAn error occurred while processing the DASD."
-#         md_abend
-#     fi
-
-#     printf "\nConverting DASD \"PR39D2.261\":\n"
-#     dasdcopy -bz2 tmp/PR39D2_1.261 os390/pr39d2.261
-#     if [[ ! -f "os390/pr39d2.261" ]]; then
-#         printf "\nAn error occurred while processing the DASD."
-#         md_abend
-#     fi
-# fi
-
 # Disk image and DASD Processing functions
 
 md_chkmrkr() {
@@ -284,15 +225,31 @@ md_chkmrkr() {
     cat /mnt/os390ra.${ext}
 }
 
-md_unpack() {
-    fullname=$1
-    ext=$2
-    unzip -joLL /mnt/os390/${fullname} -d tmp
+md_unpack_prefix() { 
+	prefix=$1
+	fullname=$2
+    ext=$3
+    unzip -joLL /mnt/${prefix}${fullname} -d tmp
     if [ ! -f "tmp/${fullname}.${ext}" ] &&
        [ ! -f "tmp/${fullname}_1.${ext}" ] &&
        [ ! -f "tmp/${fullname}_2.${ext}" ]; then
         md_abend "An error occurred while unpacking the image."
     fi
+}
+
+md_unpack2_prefix() {
+	prefix=$1
+	basename=$2
+    ext=$3
+	unzip -joLL /mnt/${prefix}${basename} -d tmp
+    if [ ! -f "tmp/${basename}_1.${ext}" ] ||
+       [ ! -f "tmp/${basename}_2.${ext}" ]; then
+        md_abend "An error occurred while unpacking the image."
+    fi
+}
+
+md_unpack() {
+	md_unpack_prefix "os390/" $1 $2
 }
 
 md_process() {
@@ -306,24 +263,52 @@ md_process() {
 }
 
 md_unpack2() {
-    basename=$1
-    ext=$2
-    unzip -joLL /mnt/os390/${basename} -d tmp
-    if [ ! -f "tmp/${basename}_1.${ext}" ] ||
-       [ ! -f "tmp/${basename}_2.${ext}" ]; then
-        md_abend "An error occurred while unpacking the image."
-    fi
+	md_unpack2_prefix "os390/" $1 $2
 }
 
-md_process2() { # TODO can be rewritten as a call to md_process
+md_process2() { # TODO test 
     basename=$1
     ext=$2
-    dasdcopy -bz2 tmp/${basename}_1.${ext} os390/${basename}_1.${ext}
-    rm tmp/*.${ext}
-    if [ ! -f "os390/${basename}_1.${ext}" ]; then
-        md_abend "An error occurred while processing the DASD."
-    fi
+	md_process ${basename}_1 ${ext}
 }
+
+# md_process2() { # TODO can be rewritten as a call to md_process
+#     basename=$1
+#     ext=$2
+#     dasdcopy -bz2 tmp/${basename}_1.${ext} os390/${basename}_1.${ext}
+#     rm tmp/*.${ext}
+#     if [ ! -f "os390/${basename}_1.${ext}" ]; then
+#         md_abend "An error occurred while processing the DASD."
+#     fi
+# }
+ 
+# md_make_v1r2
+
+if [ $distrib == "v1r2" ]; then
+
+    # CD1 ##################################################################
+
+	sudo mount -o loop -r $v1r2_cd1 /mnt
+	# Miscellanea
+    cp /mnt/readme.mvs docs/
+    cp /mnt/devmap.nme docs/
+    # MVSWK1.122
+    md_unpack_prefix "" "mvswk1" "122"
+    md_process "mvswk1" "122"
+	# PR39R2_{1,2}.260
+	md_unpack2_prefix "" "pr39r2" "260"
+	md_process2 "pr39r2" "260"
+    sudo umount /mnt
+
+	# CD2 ##################################################################
+
+    sudo mount -o loop -r $v1r2_cd2 /mnt
+    # PR39D2_{1,2}.261
+    md_unpack2_prefix "" "pr39d2" "261"
+    md_process2 "pr39d2" "261"
+    sudo umount /mnt
+
+fi
 
 # md_make_v2r10
 
@@ -451,7 +436,7 @@ if [ $distrib == "v2r10" ]; then
     if [ ! -f "/mnt/faq/index.html" ]; then
         md_abend "An error occurred while mounting the image."
     fi
-    sudo cp -r /mnt docs/
+    sudo cp -r /mnt/. docs/
     sudo umount /mnt
 
 fi
