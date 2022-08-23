@@ -18,7 +18,6 @@
 # USA
 
 # FIXME
-# - v2r10 docs' contents are readonly
 
 # TODO
 # - Add prefix directory, and a switch to keep it intact in case of a failed run
@@ -453,7 +452,7 @@ if [ $distrib == "v2r10" ]; then
     if [ ! -f "/mnt/faq/index.html" ]; then
         md_abend "An error occurred while mounting the image."
     fi
-    sudo cp -r /mnt/. docs/
+    cp -r /mnt/. docs/
     sudo umount /mnt
 
 fi
