@@ -14,7 +14,7 @@ Converts an OS/390 ADCD disk image set into an Hercules distribution
 - `cnf/` - Configuration files for Hercules
     - `os390_v1r2.cnf` - Translation of `DEVMAP.NME` from the OS/390 V1R2 ADCD disk image set
 	- `os390_v2r10.cnf` - Translation of `DEVMAP.NME` from the OS/390 V2R10 ADCD disk image set
-- `makedist.sh` - The main script that checks the images' checksums and performs the conversion
+- `makedist` - The main script that checks the images' checksums and performs the conversion
 - `README.md` - This file
 
 ## Prerequisites
@@ -38,12 +38,10 @@ The script has been developed and tested on `bash` under Ubuntu and Fedora Linux
 
 ```
 $ chmod +x makedist
-$ ./makedist -d v2r10 -D path/to/isos -t local/prefix -o
+$ ./makedist -d v2r10 -D path/to/isos -ot local/prefix
 ```
 
 Creates an OS/390 V2R10 ADCD distribution into `./local/prefix` from disk images located into `./path/to/isos` overwriting existing distribution files.
-
-> Please note that the script does not copy over the configuration files: you should do that manually as they define important Hercules operating parameters that you may want to edit before running on your system
 
 ## TODOs
 
@@ -51,9 +49,10 @@ In order of importance:
 
 - [x] Fixing v1r2
 - [x] Testing on different Linux distributions
-- [ ] Adding an option to choose a different target directory
+- [x] Adding an option to choose a different target directory
+  - [x] Adding an option to allow the user to use an absolute path at their own risk
 - [x] Adding support for v2r10 (mainly ISO checksums, DASD conversion strategies and the translation of DEVMAP.NME)
-- [x] Allow using `/tmp` as cache
+- [x] ~~Allow using `/tmp` as cache~~ The cache is now under `$prefix_dir/tmp`
 - [ ] Adding checksums and strategies for converting VM/ESA V2R4 ADCD and VSE/ESA V2R4 ADCD
 
 ## Contributing

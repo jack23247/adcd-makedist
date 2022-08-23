@@ -47,7 +47,7 @@ md_abend() {
 }
 
 md_cleanup() {
-    echo "Cleaning up."
+    echo "Removing inconsistent target directory."
     rm -rf $target_dir
 }
 
@@ -120,7 +120,7 @@ else
     exit
 fi
 
-# md_check_dirs
+# md_check_and_create_dirs
 
 if [ ! $images_dir ]; then
     md_missing_opt
@@ -161,15 +161,25 @@ else
     fi
 fi 
 
-mkdir -p $target_dir/tmp/
-if [ ! -d "$target_dir/tmp/" ]; then
+tmp_dir=$target_dir/tmp/
+docs_dir=$target_dir/docs/
+dasd_dir=$target_dir/os390/ # TODO allow for VM/ESA and VSE/ESA 
+
+mkdir -p $tmp_dir
+if [ ! -d "$tmp_dir" ]; then
     printf "Temporary directory creation failed."
     md_cleanup && exit
 fi
 
-mkdir -p $target_dir/docs/
-if [ ! -d "$target_dir/docs/" ]; then
+mkdir -p $docs_dir
+if [ ! -d "$docs_dir" ]; then
     printf "Documentation directory creation failed."
+    md_cleanup && exit
+fi
+
+mkdir -p $dasd_dir
+if [ ! -d "$dasd_dir" ]; then
+    printf "DASD directory creation failed."
     md_cleanup && exit
 fi
 
@@ -270,10 +280,10 @@ md_unpack_prefix() {
     prefix=$1
     fullname=$2
     ext=$3
-    unzip -joLL /mnt/${prefix}${fullname} -d tmp
-    if [ ! -f "tmp/${fullname}.${ext}" ] &&
-        [ ! -f "tmp/${fullname}_1.${ext}" ] &&
-        [ ! -f "tmp/${fullname}_2.${ext}" ]; then
+    unzip -joLL /mnt/${prefix}${fullname} -d $tmp_dir
+    if [ ! -f "$tmp_dir/${fullname}.${ext}" ] &&
+        [ ! -f "$tmp_dir/${fullname}_1.${ext}" ] &&
+        [ ! -f "$tmp_dir/${fullname}_2.${ext}" ]; then
         md_abend "An error occurred while unpacking the image."
     fi
 }
@@ -282,9 +292,9 @@ md_unpack2_prefix() {
     prefix=$1
     basename=$2
     ext=$3
-    unzip -joLL /mnt/${prefix}${basename} -d tmp
-    if [ ! -f "tmp/${basename}_1.${ext}" ] ||
-        [ ! -f "tmp/${basename}_2.${ext}" ]; then
+    unzip -joLL /mnt/${prefix}${basename} -d $tmp_dir
+    if [ ! -f "$tmp_dir/${basename}_1.${ext}" ] ||
+        [ ! -f "$tmp_dir/${basename}_2.${ext}" ]; then
         md_abend "An error occurred while unpacking the image."
     fi
 }
@@ -296,9 +306,9 @@ md_unpack() {
 md_process() {
     fullname=$1
     ext=$2
-    dasdcopy -bz2 tmp/${fullname}.${ext} os390/${fullname}.${ext}
-    rm tmp/*.${ext}
-    if [ ! -f "os390/${fullname}.${ext}" ]; then
+    dasdcopy -bz2 $tmp_dir/${fullname}.${ext} $dasd_dir/${fullname}.${ext}
+    rm $tmp_dir/*.${ext}
+    if [ ! -f "$dasd_dir/${fullname}.${ext}" ]; then
         md_abend "An error occurred while processing the DASD."
     fi
 }
@@ -316,8 +326,8 @@ md_process2() { # TODO test
 # md_process2() { # TODO can be rewritten as a call to md_process
 #     basename=$1
 #     ext=$2
-#     dasdcopy -bz2 tmp/${basename}_1.${ext} os390/${basename}_1.${ext}
-#     rm tmp/*.${ext}
+#     dasdcopy -bz2 $tmp_dir/${basename}_1.${ext} os390/${basename}_1.${ext}
+#     rm $tmp_dir/*.${ext}
 #     if [ ! -f "os390/${basename}_1.${ext}" ]; then
 #         md_abend "An error occurred while processing the DASD."
 #     fi
@@ -327,12 +337,14 @@ md_process2() { # TODO test
 
 if [ $distrib == "v1r2" ]; then
 
+    cp cnf/os390_v1r2.cnf $target_dir/hercules.cnf
+
     # CD1 ##################################################################
 
     sudo mount -o loop -r $v1r2_cd1 /mnt
     # Miscellanea
-    cp /mnt/readme.mvs docs/
-    cp /mnt/devmap.nme docs/
+    cp /mnt/readme.mvs $docs_dir/
+    cp /mnt/devmap.nme $docs_dir/
     # MVSWK1.122
     md_unpack_prefix "" "mvswk1" "122"
     md_process "mvswk1" "122"
@@ -355,14 +367,16 @@ fi
 
 if [ $distrib == "v2r10" ]; then
 
+    cp cnf/os390_v2r10.cnf $target_dir/hercules.cnf
+
     # CD1 ##################################################################
 
     sudo mount -o loop -r $v2r10_cd1 /mnt
     md_chkmrkr "001"
     # Miscellanea
-    cp /mnt/os390ra.pac docs/
-    cp /mnt/readme.mvs docs/
-    cp /mnt/os390/devmap.nme docs/
+    cp /mnt/os390ra.pac $docs_dir/
+    cp /mnt/readme.mvs $docs_dir/
+    cp /mnt/os390/devmap.nme $docs_dir/
     # OS39RA_{1,2}.A80
     md_unpack2 "os39ra" "a80"
     md_process2 "os39ra" "a80"
@@ -477,12 +491,13 @@ if [ $distrib == "v2r10" ]; then
     if [ ! -f "/mnt/faq/index.html" ]; then
         md_abend "An error occurred while mounting the image."
     fi
-    cp -r /mnt/. docs/
+    cp -r /mnt/. $docs_dir/
     sudo umount /mnt
 
 fi
 
 # md_done
 
+rm -rf $tmp_dir
 echo "Distribution successfully built."
-md_cleanup && exit
+exit
