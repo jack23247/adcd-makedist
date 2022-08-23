@@ -1,20 +1,37 @@
 #!/bin/bash
-# makedist.sh
-# Converts an OS/390 ADCD disk image set into an Hercules distribution
+# adcd_makedist
+# Copyright (C) 2022  Jacopo Maltagliati
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
+# USA
 
-# TODO add prefix directory, and a switch to keep it intact in 
-# case of a failed run
+# FIXME
+# - v2r10 docs' contents are readonly
 
-# TODO add 
-# - VM/ESA V2R4M0
-# - VSE/ESA V2R4M0
+# TODO
+# - Add prefix directory, and a switch to keep it intact in case of a failed run
+# - Add:
+# 	- VM/ESA V2R4M0
+# 	- VSE/ESA V2R4M0
 
 # md_funct
 
 md_getpid() {
     # https://stackoverflow.com/a/39420186
-    pgid=$( ps -q $$ -o pgid= )
-    sid=$( ps -q $$ -o sid= )
+    pgid=$(ps -q $$ -o pgid=)
+    sid=$(ps -q $$ -o sid=)
     if [[ $pgid == $sid ]]; then
         echo 0
     else
@@ -27,7 +44,7 @@ md_abend() {
     rm -rf os390
     rm -rf docs
     md_cleanup
-    kill $( md_getpid )
+    kill $(md_getpid)
 }
 
 md_cleanup() {
@@ -225,31 +242,31 @@ md_chkmrkr() {
     cat /mnt/os390ra.${ext}
 }
 
-md_unpack_prefix() { 
-	prefix=$1
-	fullname=$2
+md_unpack_prefix() {
+    prefix=$1
+    fullname=$2
     ext=$3
     unzip -joLL /mnt/${prefix}${fullname} -d tmp
     if [ ! -f "tmp/${fullname}.${ext}" ] &&
-       [ ! -f "tmp/${fullname}_1.${ext}" ] &&
-       [ ! -f "tmp/${fullname}_2.${ext}" ]; then
+        [ ! -f "tmp/${fullname}_1.${ext}" ] &&
+        [ ! -f "tmp/${fullname}_2.${ext}" ]; then
         md_abend "An error occurred while unpacking the image."
     fi
 }
 
 md_unpack2_prefix() {
-	prefix=$1
-	basename=$2
+    prefix=$1
+    basename=$2
     ext=$3
-	unzip -joLL /mnt/${prefix}${basename} -d tmp
+    unzip -joLL /mnt/${prefix}${basename} -d tmp
     if [ ! -f "tmp/${basename}_1.${ext}" ] ||
-       [ ! -f "tmp/${basename}_2.${ext}" ]; then
+        [ ! -f "tmp/${basename}_2.${ext}" ]; then
         md_abend "An error occurred while unpacking the image."
     fi
 }
 
 md_unpack() {
-	md_unpack_prefix "os390/" $1 $2
+    md_unpack_prefix "os390/" $1 $2
 }
 
 md_process() {
@@ -263,13 +280,13 @@ md_process() {
 }
 
 md_unpack2() {
-	md_unpack2_prefix "os390/" $1 $2
+    md_unpack2_prefix "os390/" $1 $2
 }
 
-md_process2() { # TODO test 
+md_process2() { # TODO test
     basename=$1
     ext=$2
-	md_process ${basename}_1 ${ext}
+    md_process ${basename}_1 ${ext}
 }
 
 # md_process2() { # TODO can be rewritten as a call to md_process
@@ -281,26 +298,26 @@ md_process2() { # TODO test
 #         md_abend "An error occurred while processing the DASD."
 #     fi
 # }
- 
+
 # md_make_v1r2
 
 if [ $distrib == "v1r2" ]; then
 
     # CD1 ##################################################################
 
-	sudo mount -o loop -r $v1r2_cd1 /mnt
-	# Miscellanea
+    sudo mount -o loop -r $v1r2_cd1 /mnt
+    # Miscellanea
     cp /mnt/readme.mvs docs/
     cp /mnt/devmap.nme docs/
     # MVSWK1.122
     md_unpack_prefix "" "mvswk1" "122"
     md_process "mvswk1" "122"
-	# PR39R2_{1,2}.260
-	md_unpack2_prefix "" "pr39r2" "260"
-	md_process2 "pr39r2" "260"
+    # PR39R2_{1,2}.260
+    md_unpack2_prefix "" "pr39r2" "260"
+    md_process2 "pr39r2" "260"
     sudo umount /mnt
 
-	# CD2 ##################################################################
+    # CD2 ##################################################################
 
     sudo mount -o loop -r $v1r2_cd2 /mnt
     # PR39D2_{1,2}.261
