@@ -40,16 +40,15 @@ md_getpid() {
 
 md_abend() {
     echo $1
-    rm -rf os390
-    rm -rf docs
     md_cleanup
+    echo "Attempting to unmount a residual image."
+    sudo umount /mnt >/dev/null 2>&1
     kill $(md_getpid)
 }
 
 md_cleanup() {
-    rm -rf tmp
-    echo "Attempting to unmount a residual image..."
-    sudo umount /mnt >/dev/null 2>&1
+    echo "Cleaning up."
+    rm -rf $target_dir
 }
 
 md_invalid_opt() {
@@ -57,11 +56,11 @@ md_invalid_opt() {
 }
 
 md_missing_opt() {
-    printf "You need to specify the \'-d\', \'-D\' and \'-t\' options.\nTry \'./makedist.sh -h\' for more information.\n"
+    printf "You need to specify the \'-d\', \'-D\' and \'-t\' options.\nTry \'./makedist -h\' for more information.\n"
 }
 
 md_usage() {
-    printf "Converts an OS/390 ADCD disk image set into an Hercules distribution.\nUsage: ./makedist [-ho] [-d DISTRIB] [-D PATH] [-t PATH]\n"
+    printf "Converts an OS/390 ADCD disk image set into an Hercules distribution.\nUsage: ./makedist [-Aho] [-d DISTRIB] [-D PATH] [-t PATH]\n"
 }
 
 
@@ -96,33 +95,23 @@ hash dasdcopy 2>/dev/null || {
 
 # md_getopts
 
-while getopts ":dDhot" opt; do
+while getopts ":Ad:D:hot:" opt; do
     case "$opt" in
-    d) distrib=("$OPTARG") ;;
-    D) images_dir=("$OPTARG") ;;
+    A) allow_abs=1 ;;
+    d) distrib=$OPTARG ;;
+    D) images_dir=$OPTARG ;;
     h) md_usage && exit ;;
     o) overwrite=1 ;;
-    t) target_dir=("$OPTARG") ;;
+    t) target_dir=$OPTARG ;;
     ?) md_invalid_opt $OPTARG && exit ;;
-    :) md_missing_opt && exit;
     esac
 done
 shift $((OPTIND - 1))
 
-if [[ usage == 1 ]]; then
-    md_usage
-    exit
-fi
-
-if [[ noopt == 1 ]]; then
-    md_noopt
-    exit
-fi
-
 # md_check_distrib_valid
 
 if [ ! $distrib ]; then
-    md_noparms
+    md_missing_opt
     exit
 elif [[ $distrib == "v1r2" || $distrib == "v2r10" ]]; then
     echo "Attempting to build distribution \"$distrib\"."
@@ -134,40 +123,53 @@ fi
 # md_check_dirs
 
 if [ ! $images_dir ]; then
-    md_noparms
+    md_missing_opt
     exit
 elif [ ! -d $images_dir ]; then
     echo "The specified source directory does not exist."
     exit
 fi
 
-# md_make_dirs
+if [ ! $target_dir ]; then
+    md_missing_opt
+    exit
+fi
 
-if [ -d "os390/" ]; then
-    if [[ $overwrite != 1 ]]; then
-        echo "The destination directory is not empty."
+if [[ $target_dir == /* ]]; then
+    if [[ $allow_abs != 1 ]]; then
+        echo "The target must be relative to the current working directory unless the '-A' flag is set."
         exit
     else
-        echo "Overwriting previous distribution..."
-        rm -rf os390/
+        echo "Using an absolute path (at your own risk)."
     fi
 fi
 
-mkdir -p tmp/
-if [ ! -d "tmp/" ]; then
-    printf "Unable to create the temporary directory."
+if [ -d $target_dir ]; then
+    if [[ $overwrite != 1 ]]; then
+        echo "The target directory already exists but the '-o' flag is not set."
+        exit
+    else
+        echo "Removing the old target directory."
+        rm -rf $target_dir
+    fi
+else
+    echo "Creating target directory '$target_dir'."
+    mkdir -p $target_dir
+    if [ ! -d $target_dir ]; then
+        echo "Target directory creation failed."
+        md_cleanup && exit
+    fi
+fi 
+
+mkdir -p $target_dir/tmp/
+if [ ! -d "$target_dir/tmp/" ]; then
+    printf "Temporary directory creation failed."
     md_cleanup && exit
 fi
 
-mkdir -p os390/
-if [ ! -d "os390/" ]; then
-    printf "Unable to create the destination directory."
-    md_cleanup && exit
-fi
-
-mkdir -p docs/
-if [ ! -d "docs/" ]; then
-    printf "Unable to create the destination directory."
+mkdir -p $target_dir/docs/
+if [ ! -d "$target_dir/docs/" ]; then
+    printf "Documentation directory creation failed."
     md_cleanup && exit
 fi
 
@@ -176,7 +178,7 @@ fi
 for image_file in $images_dir/*.iso; do
     if [ ! -f $image_file ]; then
         echo "Error opening \"$image_file\": no such file or directory."
-        exit
+        md_cleanup && exit
     elif [ $distrib == "v1r2" ]; then
         image_file_md5=$(md5sum $image_file | cut -f1 -d" ")
         if [ $image_file_md5 == "bfdc6219a72df802e5df2a40ca24d331" ]; then
@@ -185,8 +187,8 @@ for image_file in $images_dir/*.iso; do
         elif [ $image_file_md5 == "8bf8870839e3b54b1519b2a93dc184ba" ]; then
             printf "OS390_V1R2_2, "
             v1r2_cd2=$image_file
-        # else
-        #    echo "Invalid image file for distribution \"$distrib\", skipping."
+        else
+            printf "?, "
         fi
     elif [ $distrib == "v2r10" ]; then
         image_file_md5=$(md5sum $image_file | cut -f1 -d" ")
@@ -228,9 +230,9 @@ for image_file in $images_dir/*.iso; do
             v2r10_cd12=$image_file
         elif [ $image_file_md5 == "80d98edbed3c52ee60f7b24e7ad17f0e" ]; then
             printf "OS390RA013, "
-            v2r10_cd13=$image_file
-        # else
-        #    echo "Invalid image file for distribution \"$distrib\", skipping."
+            v2r10_cd13=$image_file        
+        else
+            printf "?, "
         fi
     else
         md_abend "Unhandled exception."
