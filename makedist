@@ -52,15 +52,23 @@ md_cleanup() {
     sudo umount /mnt >/dev/null 2>&1
 }
 
-md_usage() (
-    printf "Converts an OS/390 ADCD disk image set into an Hercules distribution.\nUsage:\t./makedist -d DISTNAME -D IMGDIR [ OPTIONS ]\nWhere:\tDISTNAME = {v1r2 | v2r10}\n\tIMGDIR = Path of the directory contining the disk images\n\tOPTIONS = {-o[verwrite] | -h[elp]}\n"
-)
+md_invalid_opt() {
+    printf "Invalid option \'-$1\'.\nTry \'./makedist -h\' for more information.\n"
+}
+
+md_missing_opt() {
+    printf "You need to specify the \'-d\', \'-D\' and \'-t\' options.\nTry \'./makedist.sh -h\' for more information.\n"
+}
+
+md_usage() {
+    printf "Converts an OS/390 ADCD disk image set into an Hercules distribution.\nUsage: ./makedist [-ho] [-d DISTRIB] [-D PATH] [-t PATH]\n"
+}
+
 
 # md_check_sudo
 
 if [[ "$EUID" == 0 ]]; then
-    echo "This script will automatically request superuser privileges when"
-    echo "they are required."
+    printf "This script will automatically request superuser privileges when\nthey are required."
     exit
 fi
 
@@ -70,14 +78,17 @@ hash sudo 2>/dev/null || {
     echo "Please install \"sudo\" before running makedist."
     exit
 }
+
 hash md5sum 2>/dev/null || {
     echo "Please install \"md5sum\" before running makedist."
     exit
 }
+
 hash unzip 2>/dev/null || {
     echo "Please install \"unzip\" before running makedist."
     exit
 }
+
 hash dasdcopy 2>/dev/null || {
     echo "Cannot find \"dasdcopy\": please install Hercules."
     exit
@@ -85,21 +96,33 @@ hash dasdcopy 2>/dev/null || {
 
 # md_getopts
 
-while getopts ":d:D:h:o" opt; do
-    case $opt in
+while getopts ":dDhot" opt; do
+    case "$opt" in
     d) distrib=("$OPTARG") ;;
     D) images_dir=("$OPTARG") ;;
     h) md_usage && exit ;;
     o) overwrite=1 ;;
-    *) md_usage && exit ;;
+    t) target_dir=("$OPTARG") ;;
+    ?) md_invalid_opt $OPTARG && exit ;;
+    :) md_missing_opt && exit;
     esac
 done
 shift $((OPTIND - 1))
 
+if [[ usage == 1 ]]; then
+    md_usage
+    exit
+fi
+
+if [[ noopt == 1 ]]; then
+    md_noopt
+    exit
+fi
+
 # md_check_distrib_valid
 
 if [ ! $distrib ]; then
-    echo "No distribution specified."
+    md_noparms
     exit
 elif [[ $distrib == "v1r2" || $distrib == "v2r10" ]]; then
     echo "Attempting to build distribution \"$distrib\"."
@@ -111,7 +134,7 @@ fi
 # md_check_dirs
 
 if [ ! $images_dir ]; then
-    echo "No source directory specified."
+    md_noparms
     exit
 elif [ ! -d $images_dir ]; then
     echo "The specified source directory does not exist."

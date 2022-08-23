@@ -6,20 +6,14 @@ Converts an OS/390 ADCD disk image set into an Hercules distribution
 
 > *Caveat*
 >
-> `makedist` is intended as a tool for mainframe hobbyists, not for software
-pirates: thus, this repository does not contain the disk images required to use
-this software, as they are property of IBM.
-> Before using this script you should understand that OS/390 ADCD is not
-licensed to run on anything other than a P/390 or an R/390 system, and running
-the distribution derived from this script constitutes a violation of IBM's
-license agreement.
+> `makedist` is intended as a tool for mainframe hobbyists, not for software pirates: thus, this repository does not contain the disk images required to use this software, as they are property of IBM.
+> Before using this script you should understand that the ADCDs supported by `makedist` are not licensed to run on anything other than a P/390 or an R/390 system, and running the distribution derived from this script constitutes a violation of IBM's license agreement.
 
 ## Files
 
-- `v1r2/` - Files specific to the V1R2 distribution
-    - `hercules.cnf` - Translation of `DEVMAP.NME` from the OS/390 V1R2 ADCD disk image set
-- `v2r10/` - Files specific to the V2R10 distribution
-	- `hercules.cnf` - Translation of `DEVMAP.NME` from the OS/390 V2R10 ADCD disk image set
+- `cnf/` - Configuration files for Hercules
+    - `os390_v1r2.cnf` - Translation of `DEVMAP.NME` from the OS/390 V1R2 ADCD disk image set
+	- `os390_v2r10.cnf` - Translation of `DEVMAP.NME` from the OS/390 V2R10 ADCD disk image set
 - `makedist.sh` - The main script that checks the images' checksums and performs the conversion
 - `README.md` - This file
 
@@ -27,9 +21,7 @@ license agreement.
 
 ### Supported OSes
 
-The script has been developed and tested on Ubuntu and Fedora Linux, and should
-work on any distribution that has `bash` and `hercules` without issues. I plan
-to make it `sh`-compatible in the future to allow it to run on more OSes.
+The script has been developed and tested on `bash` under Ubuntu and Fedora Linux, and should work on any distribution that has `bash` and `hercules` without issues.
 
 ### Dependencies
 
@@ -45,11 +37,11 @@ to make it `sh`-compatible in the future to allow it to run on more OSes.
 ### Example
 
 ```
-$ chmod +x makedist.sh
-$ ./makedist.sh -d v2r10 -D path/to/isos -o
+$ chmod +x makedist
+$ ./makedist -d v2r10 -D path/to/isos -t local/prefix -o
 ```
 
-Creates a `v2r10` distribution from disk images located into `./path/to/isos` overwriting existing distribution files.
+Creates an OS/390 V2R10 ADCD distribution into `./local/prefix` from disk images located into `./path/to/isos` overwriting existing distribution files.
 
 > Please note that the script does not copy over the configuration files: you should do that manually as they define important Hercules operating parameters that you may want to edit before running on your system
 
